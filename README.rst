@@ -3,13 +3,15 @@ django-sequential-pagination
 
 Paginate ordered Django querysets sequentially with "Next" button. Fully compatible with `django-el-pagination`_ (but doesn't depend on it).
 
+The pagination is performed by object ID (or any other set of fields that give strict linear order) rather than by page number. Instead of ``?page=2``, ``?page=3``, etc., it produces links like ``?from=11``, ``?from=21`` and so on. This gives the following benefits:
+
+* The pagination works extremely fast even on huge data sets. For example, on Postgres "normal" pagination may take seconds (or even minutes) on queries like ``?page=1000000``.
+
+* It prevents duplicates on next page when new data is injected at top and shifts page boundaries (this is especially important for AJAX pagination).
+
+The drawback is that there is no navigation to arbitrary page number and no reverse navigation, it's always only the link to "Next page" (or nothing at the last page).
+
 .. _django-el-pagination: https://github.com/shtalinberg/django-el-pagination
-
-Unlike "normal" pagination with ``?page=1``, ``?page=2``, etc., this library:
-
-* Works extremely fast even on huge data sets. For example, on Postgres "normal" pagination takes seconds (or even minutes) on queries like ``?page=1000000``.
-
-* Prevents duplicates on next page if new data was injected at top and shifted page boundaries (this is especially important for AJAX pagination).
 
 
 Installation
@@ -41,7 +43,7 @@ Pass an *ordered* queryset to the template:
 
 	# views.py
 	
-	def view_posts(request):
+	def recent_posts(request):
 		return render(request, "blog/posts.html", {
 			'posts': Post.objects.all().order_by('-time', '-id'),
 		})
