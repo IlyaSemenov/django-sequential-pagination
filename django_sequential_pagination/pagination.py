@@ -85,14 +85,14 @@ def paginate(request, objects, per_page=PER_PAGE, key=KEY):
 				q &= this_q
 		prev_q &= Q(**{order.key: from_v})
 
-	objects = list(objects.filter(q)[:per_page + 1])  # Fetch the first record of the next page
+	objects = list(objects.filter(q)[:per_page + 1])  # Extend range to include the first record of the next page
 
 	if len(objects) > per_page:
 		next_object = objects[-1]
 		objects = objects[:per_page]
-		next_page_url = '?' + urlencode(
-			[(key, format_qs_value(getattr(next_object, order.key))) for order in orders]
-		)
+		next_get = request.GET.copy()
+		next_get.setlist(key, [format_qs_value(getattr(next_object, order.key)) for order in orders])
+		next_page_url = '?' + next_get.urlencode()
 	else:
 		next_page_url = None
 
