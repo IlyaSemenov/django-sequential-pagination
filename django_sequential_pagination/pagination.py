@@ -85,7 +85,9 @@ def paginate(request, objects, per_page=PER_PAGE, key=KEY):
 				q &= this_q
 		prev_q &= Q(**{order.key: from_v})
 
-	objects = list(objects.filter(q)[:per_page + 1])  # Extend range to include the first record of the next page
+	objects = objects.filter(q)
+	objects = objects[:per_page+1]  # Extend range to include the first record of the next page
+	objects = list(objects)
 
 	if len(objects) > per_page:
 		next_object = objects[-1]
@@ -100,4 +102,5 @@ def paginate(request, objects, per_page=PER_PAGE, key=KEY):
 		'objects': objects,
 		'next_page_url': next_page_url,
 		'key': key,
+		'from': page_from,
 	}
