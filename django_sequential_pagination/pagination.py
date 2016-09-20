@@ -1,4 +1,3 @@
-from django.utils.http import urlencode
 from django.db.models import Q
 
 from .settings import PER_PAGE, KEY
@@ -48,17 +47,52 @@ def parse_qs_value(s):
 		return s
 
 
-def paginate(request, objects, per_page=PER_PAGE, key=KEY):
+def paginate(request, objects, per_page=PER_PAGE, key=KEY, use_offset=False):
 	if isinstance(object, list):
 		return objects
 
-	order_by = objects.query.order_by or objects.model._meta.ordering
-	if not order_by:
-		raise Exception("Objects must be ordered")
+	if use_offset:
+		order_by = None
+	else:
+		order_by = objects.query.order_by or (hasattr(objects, 'model') and objects.model._meta.ordering) or None
 
-	orders = [Order(order_key) for order_key in order_by]
+	if order_by:
+		orders = [Order(order_key) for order_key in order_by]
+		page_from = [parse_qs_value(v) for v in request.GET.getlist(key) or request.POST.getlist(key)]
+		objects = filter_objects(objects, orders, page_from)
+		offset = 0
+	else:
+		# Fallback to OFFSET pagination
+		try:
+			offset = int(request.GET.get(key) or request.POST.get(key))
+		except (TypeError, ValueError):
+			offset = 0
+		page_from = [offset]
 
-	page_from = [parse_qs_value(v) for v in request.GET.getlist(key) or request.POST.getlist(key)]
+	objects = objects[offset:offset+per_page+1]  # Extend range to include the first record of the next page
+	objects = list(objects)
+
+	if len(objects) > per_page:
+		next_object = objects[-1]
+		objects = objects[:per_page]
+		next_get = request.GET.copy()
+		if order_by:
+			next_get.setlist(key, [format_qs_value(getattr(next_object, order.key)) for order in orders])
+		else:
+			next_get[key] = str(offset + per_page)
+		next_page_url = '?' + next_get.urlencode()
+	else:
+		next_page_url = None
+
+	return {
+		'objects': objects,
+		'next_page_url': next_page_url,
+		'key': key,
+		'from': page_from,
+	}
+
+
+def filter_objects(objects, orders, page_from):
 	q = Q()
 	prev_q = Q()
 	for order, from_v in zip(orders, page_from):
@@ -85,22 +119,4 @@ def paginate(request, objects, per_page=PER_PAGE, key=KEY):
 				q &= this_q
 		prev_q &= Q(**{order.key: from_v})
 
-	objects = objects.filter(q)
-	objects = objects[:per_page+1]  # Extend range to include the first record of the next page
-	objects = list(objects)
-
-	if len(objects) > per_page:
-		next_object = objects[-1]
-		objects = objects[:per_page]
-		next_get = request.GET.copy()
-		next_get.setlist(key, [format_qs_value(getattr(next_object, order.key)) for order in orders])
-		next_page_url = '?' + next_get.urlencode()
-	else:
-		next_page_url = None
-
-	return {
-		'objects': objects,
-		'next_page_url': next_page_url,
-		'key': key,
-		'from': page_from,
-	}
+	return objects.filter(q)
