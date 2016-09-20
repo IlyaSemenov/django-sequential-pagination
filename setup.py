@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name='django-sequential-pagination',
-	version='0.0.2',
+	version='0.0.3',
 	url='https://github.com/IlyaSemenov/django-sequential-pagination',
 	license='BSD',
 	author='Ilya Semenov',
