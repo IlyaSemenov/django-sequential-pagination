@@ -47,11 +47,20 @@ def parse_qs_value(s):
 		return s
 
 
+# Populate the list of QuerySet classes that are known to be better used with OFFSET navigation
+use_offset_classes = []
+try:
+	from haystack.query import SearchQuerySet
+	use_offset_classes.append(SearchQuerySet)
+except:
+	pass
+
+
 def paginate(request, objects, per_page=PER_PAGE, key=KEY, use_offset=False):
 	if isinstance(object, list):
 		return objects
 
-	if use_offset:
+	if use_offset or (use_offset_classes and isinstance(objects, tuple(use_offset_classes))):
 		order_by = None
 	else:
 		order_by = objects.query.order_by or (hasattr(objects, 'model') and objects.model._meta.ordering) or None
