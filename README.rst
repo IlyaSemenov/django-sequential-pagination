@@ -117,7 +117,7 @@ Jinja2
 
 If Jinja2 is installed, ``django_sequential_pagination.templatetags.pagination`` will be a ``jinja2.contextfunction``.
 
-Additionally, if `django_jinja`_ is installed, it will be registered automatically as a template tag, so you can use it right away:
+Additionally, if `django_jinja`_ is installed, it will be registered automatically as a global template function, so you can use it right away:
 
 .. _django_jinja: https://github.com/niwinz/django-jinja
 
