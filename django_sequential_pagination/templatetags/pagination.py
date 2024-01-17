@@ -20,7 +20,12 @@ try:
 except ImportError:
 	pass
 else:
-	jinja2.contextfunction(paginate)
+	if jinja2.__version__ < '3.0.0':
+		contextfunction = jinja2.contextfunction
+	else:
+		contextfunction = jinja2.pass_context
+
+	contextfunction(paginate)
 
 try:
 	from django_jinja import library
